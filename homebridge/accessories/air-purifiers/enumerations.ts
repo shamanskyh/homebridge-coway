@@ -41,3 +41,19 @@ export enum AirQuality {
     FAIR = 3,
     INFERIOR = 4
 }
+
+export enum AirmegaLight {
+    ON = "2",
+    OFF = "0"
+}
+
+export enum AirmegaMode {
+    MANUAL = "0",
+    AUTO = "1"
+}
+
+export enum AirmegaFanSpeed {
+    LOW = "1",
+    MEDIUM = "2",
+    HIGH = "3"
+}

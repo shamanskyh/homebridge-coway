@@ -28,7 +28,7 @@ export class DriverWaterPurifier extends Accessory<DriverWaterPurifierInterface>
     private hotWaterLockService?: Service;
 
     constructor(log: Logging, api: API, deviceInfo: Device, service: CowayService, platformAccessory: PlatformAccessory) {
-        super(log, api, DeviceType.DRIVER_WATER_PURIFIER, deviceInfo, service, platformAccessory);
+        super(log, api, DeviceType.WATER_PURIFIER, deviceInfo, service, platformAccessory);
 
         this.endpoints.push(EndpointPath.DEVICES_CONTROL);
     }

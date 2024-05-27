@@ -32,7 +32,7 @@ export class MarvelAirPurifier extends Accessory<MarvelAirPurifierInterface> {
     private lightbulbService?: Service;
 
     constructor(log: Logging, api: API, deviceInfo: Device, service: CowayService, platformAccessory: PlatformAccessory) {
-        super(log, api, DeviceType.MARVEL_AIR_PURIFIER, deviceInfo, service, platformAccessory);
+        super(log, api, DeviceType.AIR_PURIFIER, deviceInfo, service, platformAccessory);
 
         this.endpoints.push(EndpointPath.DEVICES_CONTROL);
         this.endpoints.push(EndpointPath.AIR_DEVICES_HOME);

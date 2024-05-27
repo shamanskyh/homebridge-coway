@@ -1,5 +1,5 @@
 import {AccessoryInterface} from "../accessory";
-import {FanSpeed, Mode, AirQuality} from "./enumerations";
+import {FanSpeed, Mode, AirQuality, AirmegaFanSpeed, AirmegaMode} from "./enumerations";
 
 export interface FilterInfo {
     filterName: string;
@@ -15,6 +15,10 @@ export interface IndoorAirQuality {
     temperature: number;
 }
 
+export interface AirmegaIndoorAirQuality {
+    pm10Density: number;
+}
+
 export interface LightbulbControlInfo {
     on: boolean;
     brightness: number;
@@ -28,8 +32,21 @@ export interface ControlInfo {
     fanSpeed: FanSpeed;
 }
 
+export interface AirmegaControlInfo {
+    on: boolean;
+    lightbulb: boolean;
+    fanSpeed: AirmegaFanSpeed;
+    mode: AirmegaMode
+}
+
 export interface MarvelAirPurifierInterface extends AccessoryInterface {
     filterInfos: FilterInfo[];
     indoorAirQuality: IndoorAirQuality;
     controlInfo: ControlInfo;
+}
+
+export interface AirmegaAirPurifierInterface extends AccessoryInterface {
+    filterInfos: FilterInfo[];
+    indoorAirQuality: AirmegaIndoorAirQuality;
+    controlInfo: AirmegaControlInfo;
 }

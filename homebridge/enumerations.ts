@@ -32,6 +32,17 @@ export enum EndpointPath {
 }
 
 export enum DeviceType {
-    DRIVER_WATER_PURIFIER = "001",
-    MARVEL_AIR_PURIFIER = "004"
+    WATER_PURIFIER = "001",
+    AIR_PURIFIER = "004",
+}
+
+export enum SpecificDeviceType {
+    DRIVER_WATER_PURIFIER = "001+DRIVER",
+    MARVEL_AIR_PURIFIER = "004+MARVEL",
+    AIRMEGA_AIR_PURIFIER = "004+AIRMEGA",
+}
+
+export enum AirmegaFilterCode {
+    PRE_FILTER = "3306520",
+    MAX_FILTER = "3104757"
 }

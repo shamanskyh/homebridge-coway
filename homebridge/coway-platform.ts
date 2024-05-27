@@ -2,25 +2,30 @@ import {API, APIEvent, DynamicPlatformPlugin, Logging, PlatformAccessory, Platfo
 import {AccessToken, CowayService} from "./coway";
 import {CowayConfig} from "./interfaces/config";
 import {Accessory, AccessoryInterface} from "./accessories/accessory";
-import {Constants, DeviceType, IoCareEndpoint} from "./enumerations";
+import {Constants, DeviceType, SpecificDeviceType, IoCareEndpoint} from "./enumerations";
+import {AirmegaAirPurifier} from "./accessories/air-purifiers/airmega-air-purifier";
 import {MarvelAirPurifier} from "./accessories/air-purifiers/marvel-air-purifier";
 import {DriverWaterPurifier} from "./accessories/water-purifiers/driver-water-purifier";
 import {Device} from "./interfaces/device";
 import compareSemanticVersion from "semver-compare";
+import { access } from "fs";
 
-type AccessoryTypes =
+type AccessoryTypes = 
     typeof DriverWaterPurifier |
-    typeof MarvelAirPurifier;
+    typeof MarvelAirPurifier |
+    typeof AirmegaAirPurifier;
 
 export class CowayPlatform implements DynamicPlatformPlugin {
 
     private readonly service: CowayService;
     private readonly config?: CowayConfig;
     private readonly accessories: Accessory<AccessoryInterface>[] = [];
-    private readonly accessoryRegistry: { [deviceType in DeviceType]: AccessoryTypes } = {
-        [DeviceType.DRIVER_WATER_PURIFIER]: DriverWaterPurifier,
-        [DeviceType.MARVEL_AIR_PURIFIER]: MarvelAirPurifier
+    private readonly accessoryRegistry: { [deviceType in SpecificDeviceType]: AccessoryTypes } = {
+        [SpecificDeviceType.DRIVER_WATER_PURIFIER]: DriverWaterPurifier,
+        [SpecificDeviceType.MARVEL_AIR_PURIFIER]: MarvelAirPurifier,
+        [SpecificDeviceType.AIRMEGA_AIR_PURIFIER]: AirmegaAirPurifier,
     };
+
 
     private accessToken?: AccessToken = undefined;
 
@@ -61,7 +66,7 @@ export class CowayPlatform implements DynamicPlatformPlugin {
     enqueueDeviceRefreshInterval() {
         setInterval(async () => {
             await this.refreshDevicesParallel();
-        }, 5 * 1000);
+        }, 30 * 1000);
     }
 
     async refreshDevicesParallel() {
@@ -90,7 +95,12 @@ export class CowayPlatform implements DynamicPlatformPlugin {
 
     configureAccessory(platformAccessory: PlatformAccessory) {
         const context = platformAccessory.context as AccessoryInterface;
-        const accessoryType = this.accessoryRegistry[<DeviceType> context.deviceType];
+        if (!context.deviceInfo) {
+            this.log.warn("Failed to reconfigure %s", platformAccessory.displayName);
+            return;
+        }
+        const accessoryTypeString = context.deviceType + "+" + context.deviceInfo.prodName;
+        const accessoryType = this.accessoryRegistry[<SpecificDeviceType>accessoryTypeString];
         if(!accessoryType) {
             this.log.warn("Failed to reconfigure %s", platformAccessory.displayName);
             return;
@@ -100,6 +110,7 @@ export class CowayPlatform implements DynamicPlatformPlugin {
 
         platformAccessory.context.configured = false;
         this.log.info("Configuring cached accessory: %s", platformAccessory.displayName);
+        this.api.updatePlatformAccessories([platformAccessory]);
     }
 
     async checkAndRefreshDevicesOnline(devices: Device[]) {
@@ -127,6 +138,7 @@ export class CowayPlatform implements DynamicPlatformPlugin {
             return false;
         }
         const deviceInfos: any[] = response.data.deviceInfos;
+
         if(!deviceInfos.length) {
             this.log.warn("No Coway devices in your account");
             return false;
@@ -162,7 +174,8 @@ export class CowayPlatform implements DynamicPlatformPlugin {
         if(!this.accessories.find(accessory => accessory.getPlatformAccessory().UUID === uuid)) {
             this.log.info("Adding new accessory: %s (%s)", deviceInfo.dvcNick, deviceInfo.prodName);
             const platformAccessory = new this.api.platformAccessory(deviceInfo.dvcNick, uuid);
-            const accessoryType = this.accessoryRegistry[deviceType];
+            const accessoryTypeString = deviceType + "+" + deviceInfo.prodName
+            const accessoryType = this.accessoryRegistry[<SpecificDeviceType>accessoryTypeString];
             const accessory = new accessoryType(this.log, this.api, deviceInfo, this.service, platformAccessory);
 
             this.accessories.push(accessory);
@@ -173,10 +186,12 @@ export class CowayPlatform implements DynamicPlatformPlugin {
             platformAccessory.context.configured = true;
 
             this.api.registerPlatformAccessories(Constants.PLUGIN_NAME, Constants.PLATFORM_NAME, [ platformAccessory ]);
+            this.api.updatePlatformAccessories([platformAccessory]);
         } else {
             this.log.info("Restoring existing accessory: %s (%s)", deviceInfo.dvcNick, deviceInfo.prodName);
             for (const accessory of this.accessories.filter(accessory => accessory.getPlatformAccessory().UUID === uuid)) {
                 accessory.configureCredentials(this.config!, this.accessToken!);
+                accessory.setDeviceInfo(deviceInfo);
                 await accessory.configure();
 
                 const platformAccessory = accessory.getPlatformAccessory();
@@ -184,6 +199,8 @@ export class CowayPlatform implements DynamicPlatformPlugin {
                 platformAccessory.context.deviceInfo = deviceInfo;
                 platformAccessory.context.deviceType = deviceType;
                 platformAccessory.context.configured = true;
+
+                this.api.updatePlatformAccessories([platformAccessory]);
             }
         }
     }

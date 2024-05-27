@@ -38,7 +38,6 @@ export type CharacteristicSetListener = (value: CharacteristicValue, callback: C
 export class Accessory<T extends AccessoryInterface> {
 
     protected readonly endpoints: EndpointPath[] = [];
-    protected readonly enqueuedPayloads: ExpirablePayloadCommand[] = [];
 
     // Lazy-inits
     protected config?: CowayConfig = undefined;
@@ -50,7 +49,7 @@ export class Accessory<T extends AccessoryInterface> {
     constructor(protected readonly log: Logging,
                 protected readonly api: API,
                 protected readonly deviceType: DeviceType,
-                protected readonly deviceInfo: Device,
+                protected deviceInfo: Device,
                 protected readonly service: CowayService,
                 protected readonly platformAccessory: PlatformAccessory) {
     }
@@ -70,6 +69,10 @@ export class Accessory<T extends AccessoryInterface> {
 
     getDeviceId(): string {
         return this.deviceInfo.barcode;
+    }
+
+    setDeviceInfo(deviceInfo: Device) {
+        this.deviceInfo = deviceInfo;
     }
 
     protected replace(context: T) {
@@ -146,46 +149,6 @@ export class Accessory<T extends AccessoryInterface> {
                 this.isConnected = false;
                 return;
             }
-            const info = controlInfo["controlStatus"];
-            const commandsToFlush: ExpirablePayloadCommand[] = [];
-            const commandsToPurge: ExpirablePayloadCommand[] = [];
-
-            let skipped = 0;
-            for(const command of this.enqueuedPayloads) {
-                const fetchedValue = info[command.key];
-                const desiredValue = command.value;
-
-                // If the newly fetched value is same with desired value, invalidate the enqueued command
-                if(fetchedValue === desiredValue) {
-                    commandsToFlush.push(command);
-                } else {
-                    // Otherwise, override the fetched value with desired value until be same
-                    info[command.key] = desiredValue;
-                    command.skips++;
-                    // Too many skips will be purged automatically
-                    if(command.skips >= COMMAND_MAXIMUM_SKIPS) {
-                        commandsToPurge.push(command);
-                    } else {
-                        skipped++;
-                    }
-                }
-            }
-            if(commandsToFlush.length) {
-                commandsToFlush.forEach(command => {
-                    this.enqueuedPayloads.splice(this.enqueuedPayloads.indexOf(command), 1);
-                });
-                this.log.debug("%d enqueued payloads have been flushed", commandsToFlush.length);
-            }
-            if(commandsToPurge.length) {
-                commandsToPurge.forEach(command => {
-                    this.enqueuedPayloads.splice(this.enqueuedPayloads.indexOf(command), 1);
-                });
-                this.log.debug("%d enqueued payloads have been purged since have skipped %d times", commandsToPurge.length, COMMAND_MAXIMUM_SKIPS);
-            }
-            if(skipped) {
-                this.log.debug("%d fetched keys have been kept this time", skipped);
-            }
-
             // Update device network connection info
             this.isConnected = controlInfo["netStatus"] as boolean;
         }
@@ -209,19 +172,6 @@ export class Accessory<T extends AccessoryInterface> {
     async executeSetPayloads(deviceInfo: Device, inputs: PayloadCommand[], accessToken?: AccessToken) {
         if(!this.isConnected) {
             return;
-        }
-        for(const command of inputs) {
-            const preoccupied = this.enqueuedPayloads.find(preoccupied => preoccupied.key === command.key);
-            if(preoccupied) {
-                // already preoccupied payload exists
-                this.log.debug("Payload command has overridden: %s - %s → %s", command.key, preoccupied.value, command.value);
-                preoccupied.value = command.value;
-            } else {
-                this.enqueuedPayloads.push({
-                    ...command,
-                    skips: 0
-                });
-            }
         }
         return await this.service.executeSetPayloads(deviceInfo, inputs, accessToken);
     }
