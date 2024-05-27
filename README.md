@@ -2,12 +2,12 @@
     <h1 align="center">Homebridge Coway</h1>
 </p>
 
-Homebridge Coway is a homebridge plugin to support Coway purifier products in Apple Home Ecosystem.
-Features include water purifiers with locks and air purifiers with air quality, humidity, temperature, and more.
+Homebridge Coway is a homebridge plugin to support Coway purifier products in HomeKit.
 
 The plugin have been tested on following devices:
 - AP-1521B-WT `MARVEL`
 - CHP-7210N(BG) `DRIVER`
+- AP-1515G `AIRMEGA`
 
 
 ## Accessory Progress
@@ -24,3 +24,13 @@ The plugin have been tested on following devices:
 
 ### DRIVER Water Purifiers
 - Getting and setting locks of water valve (cold / hot)
+
+### AIRMEGA Air Purifiers
+- Turning purifier on and off
+- Turning the fan on and off
+- Getting and setting rotation speed of the fan (3 levels)
+- Getting and setting fan operation mode (manual / automatic)
+- Turning the LED air quality indicator on and off
+- Getting current air quality
+- Getting current PM2.5 level
+- Getting current filter life levels (Pre filter and Max filter)
