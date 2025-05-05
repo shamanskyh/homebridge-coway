@@ -133,6 +133,8 @@ export class AirmegaAirPurifier extends Accessory<AirmegaAirPurifierInterface> {
         this.lightbulbService = this.registerLightbulbService();
         this.preFilterService = this.registerFilterMaintenanceService(AirmegaFilterCode.PRE_FILTER);
         this.maxFilterService = this.registerFilterMaintenanceService(AirmegaFilterCode.MAX_FILTER);
+
+        this.airPurifierService.addLinkedService(this.preFilterService);
     }
 
     getControlInfo(controlInfo: any): AirmegaControlInfo {
